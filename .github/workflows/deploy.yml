@@ -75,16 +75,16 @@ jobs:
       - id: 'deploy-caller'
         uses: 'google-github-actions/deploy-cloudrun@v2'
         with:
-          service: 'openai-api'
+          service: 'caller-api'
           image: ${{ env.CALLER_IMAGE_NAME }}:latest
-          project_id: 'acolad-aiplt-public'
+          project_id: ${{ env.PROJECT_ID }}
           region: 'europe-west1'
       - id: 'deploy-callee'
         uses: 'google-github-actions/deploy-cloudrun@v2'
         with:
-          service: 'openai-api'
+          service: 'callee-api'
           image: ${{ env.CALLEE_IMAGE_NAME }}:latest
-          project_id: 'acolad-aiplt-public'
+          project_id: ${{ env.PROJECT_ID }}
           region: 'europe-west1'
 
 
