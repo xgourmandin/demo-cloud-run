@@ -4,12 +4,13 @@ resource "google_cloud_run_v2_service" "caller" {
 
   template {
     containers {
-      image = "europe-west1-docker.pkg.dev/${var.project_id}/perso-registry/caller-api"
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
     }
   }
 
   ingress = "INGRESS_TRAFFIC_ALL"
 
+  depends_on = [google_project_service.default]
 }
 
 data "google_iam_policy" "noauth" {
@@ -21,7 +22,7 @@ data "google_iam_policy" "noauth" {
   }
 }
 
-resource "google_cloud_run_v2_service_iam_policy" "noauth" {
+resource "google_cloud_run_v2_service_iam_policy" "caller_noauth" {
   location    = google_cloud_run_v2_service.caller.location
   project     = google_cloud_run_v2_service.caller.project
   name        = google_cloud_run_v2_service.caller.name
@@ -35,14 +36,16 @@ resource "google_cloud_run_v2_service" "callee" {
 
   template {
     containers {
-      image = "europe-west1-docker.pkg.dev/${var.project_id}/perso-registry/callee-api"
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
     }
   }
 
   ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+
+  depends_on = [google_project_service.default]
 }
 
-resource "google_cloud_run_v2_service_iam_policy" "noauth" {
+resource "google_cloud_run_v2_service_iam_policy" "callee_noauth" {
   location    = google_cloud_run_v2_service.callee.location
   project     = google_cloud_run_v2_service.callee.project
   name        = google_cloud_run_v2_service.callee.name

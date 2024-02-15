@@ -37,6 +37,7 @@ jobs:
         name: Tag Docker image and push Caller to Google Artifact Registry
         uses: docker/build-push-action@v5
         with:
+          context: ./caller_api
           push: true
           tags: |
             ${{ env.CALLER_IMAGE_NAME }}:${{ steps.get-tag.outputs.short_ref }}
@@ -47,6 +48,7 @@ jobs:
         name: Tag Docker image and push Callee to Google Artifact Registry
         uses: docker/build-push-action@v5
         with:
+          context: ./callee_api
           push: true
           tags: |
             ${{ env.CALLEE_IMAGE_NAME }}:${{ steps.get-tag.outputs.short_ref }}
