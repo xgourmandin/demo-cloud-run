@@ -1,0 +1,89 @@
+on:
+  workflow_dispatch:
+
+env:
+  CALLER_IMAGE_NAME: 'europe-west1-docker.pkg.dev/xgo-sandbox-d087/perso-registry/caller-api'
+  CALLEE_IMAGE_NAME: 'europe-west1-docker.pkg.dev/xgo-sandbox-d087/perso-registry/callee-api'
+  PROJECT_ID: 'xgo-sandbox-d087'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ vars.WORKLOAD_ID_PROVIDER }}
+          service_account: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
+      - name: Login to Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: europe-west1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Get tag
+        id: get-tag
+        run: echo ::set-output name=short_ref::${GITHUB_REF#refs/*/}
+      - id: docker-push-tagged-caller
+        name: Tag Docker image and push Caller to Google Artifact Registry
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: |
+            ${{ env.CALLER_IMAGE_NAME }}:${{ steps.get-tag.outputs.short_ref }}
+            ${{ env.CALLER_IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - id: docker-push-tagged-callee
+        name: Tag Docker image and push Callee to Google Artifact Registry
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: |
+            ${{ env.CALLEE_IMAGE_NAME }}:${{ steps.get-tag.outputs.short_ref }}
+            ${{ env.CALLEE_IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: ['build']
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: 'actions/checkout@v4'
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ vars.WORKLOAD_ID_PROVIDER }}
+          service_account: ${{ vars.SERVICE_ACCOUNT_EMAIL }}
+      - id: 'deploy-caller'
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: 'openai-api'
+          image: ${{ env.CALLER_IMAGE_NAME }}:latest
+          project_id: 'acolad-aiplt-public'
+          region: 'europe-west1'
+      - id: 'deploy-callee'
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: 'openai-api'
+          image: ${{ env.CALLEE_IMAGE_NAME }}:latest
+          project_id: 'acolad-aiplt-public'
+          region: 'europe-west1'
+
+
+  
