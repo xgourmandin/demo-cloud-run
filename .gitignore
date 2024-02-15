@@ -5,3 +5,4 @@ venv
 **/.terraform.lock.hcl
 **/*.tfstate
 **/*.tfstate.*
+bootstrap/terraform.tfvars
